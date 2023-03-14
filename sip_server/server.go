@@ -8,6 +8,14 @@ import (
 	"github.com/yushimeng/rock/sip"
 )
 
+type SipServerConf struct {
+	serverId       string
+	serverPort     int
+	serverIp       string
+	ServerRealm    string
+	pull_immediate bool
+}
+
 // // RequestHandler is a callback that will be called on the incoming request
 // type RequestHandler func(req *Request, tx ServerTransaction)
 
@@ -18,8 +26,9 @@ type SipServer struct {
 	// requestHandlers map of all registered request handlers
 	// requestHandlers  map[RequestMethod]RequestHandler
 	// unhandledHandler RequestHandler
-	ctx context.Context
-	log *logrus.Entry
+	ctx  context.Context
+	log  *logrus.Entry
+	conf *SipServerConf
 }
 
 // func (srv *SipServer) defaultUnhandledHandler(req *Request, tx ServerTransaction) {

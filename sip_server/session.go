@@ -13,13 +13,24 @@ import (
 )
 
 type SipSession struct {
-	clientId       string
-	conn           transport.Connection
-	timerRegister  *time.Timer
-	timerKeepalive *time.Timer
-	request_chan   chan *sip.Request
-	response_chan  chan *sip.Response
-	log            *logrus.Entry
+	// client info
+	clientId  string
+	transport sip.Transport
+	peerIp    string
+	peerPort  int
+	conn      transport.Connection
+
+	// server info
+	registerRequest *sip.Request
+	timerRegister   *time.Timer
+	timerKeepalive  *time.Timer
+	request_chan    chan *sip.Request
+	response_chan   chan *sip.Response
+	log             *logrus.Entry
+
+	// conf
+	// pull_immediate bool
+	conf *SipServerConf
 }
 
 // for futher make sip session by response, we set params so many, and simple.
@@ -38,6 +49,8 @@ func NewSipSession(srv *SipServer, clientId, transport, addr string) *SipSession
 		request_chan:  make(chan *sip.Request, 1),
 		response_chan: make(chan *sip.Response, 1),
 		log:           logger,
+		// pull_immediate: true,
+		conf: srv.conf,
 	}
 
 	return sess
@@ -69,6 +82,7 @@ func (sess *SipSession) Serve(ctx context.Context) {
 		case <-sess.timerKeepalive.C:
 			sess.log.Warn("timerKeepalive timeout")
 			return
+		// case invite<- sess.invite_chan:
 		case req := <-sess.request_chan:
 			sess.processRequest(req)
 		case res := <-sess.response_chan:
@@ -130,8 +144,17 @@ func (sess *SipSession) processRequest(req *sip.Request) {
 
 		res := sip.NewResponseFromRequest(req, 200, "OK", nil)
 		sess.conn.WriteMsg(res)
+
+		sess.registerRequest = req
+		//
+		sess.log.Println("pull_immediate: ", sess.conf.pull_immediate)
+
+		if sess.conf.pull_immediate {
+			sess.sendInvite()
+		}
 		return
 	}
+
 	if req.Method == sip.MESSAGE {
 		v := RequestBody{}
 		err := xml.Unmarshal(req.Body(), &v)
@@ -143,7 +166,37 @@ func (sess *SipSession) processRequest(req *sip.Request) {
 	}
 
 }
+func (sess *SipSession) sendInvite() {
+	sender := sip.Uri{
+		User: sess.conf.serverId,
+		Host: sess.conf.serverIp,
+		Port: sess.conf.serverPort,
+	}
 
+	recipment := sip.Uri{
+		User: sess.clientId,
+		Host: sess.peerIp,
+		Port: sess.peerPort,
+	}
+
+	req := sip.NewInviteRequest(sender, recipment, sess.registerRequest.Transport(), nil)
+
+	// sdp := "v=0 \
+	// o=34020000002000000719 0 0 IN IP4 192.168.10.10 \
+	// s=Play
+	// c=IN IP4 192.168.10.10
+	// t=0 0
+	// m=video 5060 RTP/AVP 96 97 98
+	// a=recvonly
+	// a=rtpmap:96 PS/90000
+	// a=rtpmap:97 H264/90000
+	// a=rtpmap:98 MPEG4/90000
+	// y=1760090202"
+	sess.log.Println("send invite", req)
+	req.SetDestination(sess.registerRequest.Source())
+	req.SetTransport(sess.registerRequest.Transport())
+	sess.conn.WriteMsg(req)
+}
 func (sess *SipSession) processResponse(req *sip.Response) {
 
 }

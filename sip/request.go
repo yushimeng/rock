@@ -5,6 +5,9 @@ import (
 	"io"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/emiago/sipgo/sip"
 )
 
 // Request RFC 3261 - 7.1.
@@ -222,6 +225,62 @@ func (req *Request) Destination() string {
 
 	port := DefaultPort(req.Transport())
 	return fmt.Sprintf("%v:%v", host, port)
+}
+
+/*
+INVITE sip:34020000002000000719@192.168.10.8:60719;transport=UDP SIP/2.0
+Via: SIP/2.0/ ;branch=z9hG4bK-524287-1---3d3fa662632a7a58;rport
+Max-Forwards: 70
+Contact: <sip:34020000002000000001>
+To: <sip:34020000002000000719@3402000000>
+From: <sip:34020000002000000001@3402000000>;tag=a8de8e37
+Call-ID: Todht0cMF4NZadf4bA86bw..
+CSeq: 1 INVITE
+Subject: 34020000002000000719:000000719,34020000002000000001:0
+Allow: REGISTER, INVITE, MESSAGE, ACK, BYE, CANCEL, INFO, SUBSCRIBE, NOTIFY
+Content-Type: APPLICATION/SDP
+User-Agent: SYSZUX28181
+Content-Length: 221
+*/
+// A valid SIP request formulated by a UAC MUST, at a minimum, contain
+// the following header fields: To, From, CSeq, Call-ID, Max-Forwards,
+// and Via; all of these header fields are mandatory in all SIP
+// requests.
+func NewInviteRequest(sender *sip.Uri, recipment *sip.Uri, transport string, body []byte) *Request {
+	inviteReq := NewRequest(INVITE, recipment, "SIP/2.0")
+
+	params := sip.NewParams()
+	params["branch"] = sip.GenerateBranch()
+	inviteReq.AppendHeader(&sip.ViaHeader{
+		ProtocolName:    "SIP",
+		ProtocolVersion: "2.0",
+		Transport:       transport,
+		Host:            sender.Host, // should be server ip.
+		Port:            sender.Port,
+		Params:          params,
+	})
+
+	inviteReq.AppendHeader(&sip.FromHeader{
+		DisplayName: strings.ToUpper(sender.User),
+		Address: sip.Uri{
+			User: sender.User,
+			Host: sender.Host,
+			Port: sender.Port,
+		},
+	})
+	inviteReq.AppendHeader(&sip.ToHeader{
+		DisplayName: strings.ToUpper(recipment.User),
+		Address: sip.Uri{
+			User: recipment.User,
+			Host: recipment.Host,
+			Port: recipment.Port,
+		},
+	})
+	callid := sip.CallIDHeader("gotest-" + time.Now().Format(time.RFC3339Nano))
+	inviteReq.AppendHeader(&callid)
+	inviteReq.AppendHeader(&sip.CSeqHeader{SeqNo: 1, MethodName: INVITE})
+	inviteReq.SetBody(nil)
+	return inviteReq
 }
 
 // NewAckRequest creates ACK request for 2xx INVITE
