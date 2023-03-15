@@ -155,8 +155,7 @@ func (t *UDPTransport) readConnection(conn *UDPConnection) {
 			t.log.Error().Err(err)
 			return
 		}
-		conn.WriteTo([]byte("hello..."), raddr)
-		fmt.Println("raddr=", raddr)
+		// fmt.Println("raddr=", raddr) //127.0.0.1:55413
 
 		data := buf[:num]
 		if len(bytes.Trim(data, "\x00")) == 0 {

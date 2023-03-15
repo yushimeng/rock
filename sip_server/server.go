@@ -51,9 +51,22 @@ func NewSipServer(ctx context.Context) *SipServer {
 		return nil
 	}
 
+	serverip, err := sip.GetLocalIp()
+	if err != nil {
+		return nil
+	}
+
+	cfg := &SipServerConf{
+		serverId:       "34020000002000000001",
+		serverPort:     5060,
+		serverIp:       serverip,
+		ServerRealm:    "3402000000",
+		pull_immediate: true,
+	}
 	srv := &SipServer{
 		UserAgent: ua,
 		ctx:       ctx,
+		conf:      cfg,
 		log:       ctx.Value("log").(*logrus.Logger).WithFields(logrus.Fields{"caller": "SipServer"}),
 	}
 

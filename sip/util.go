@@ -3,6 +3,7 @@ package sip
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net"
 	"strings"
@@ -18,6 +19,13 @@ const (
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+func RandInt() string {
+	min := 0
+	max := 9999999999
+	// rand.Seed(time.Now().Unix()) //随机种子
+	r := rand.Intn(max-min) + min
+	return fmt.Sprintf("%010d", r)
 }
 
 // https://github.com/kpbird/golang_random_string
@@ -48,7 +56,10 @@ var src = rand.NewSource(time.Now().UnixNano())
 
 // https://stackoverflow.com/questions/22892120/how-to-generate-a-random-string-of-a-fixed-length-in-go
 func RandStringBytesMask(sb *strings.Builder, n int) string {
-	sb.Grow(n)
+
+	if sb.Cap()-sb.Len() < n {
+		sb.Grow(n)
+	}
 	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
 	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {
 		if remain == 0 {
@@ -264,4 +275,30 @@ func MessageShortString(msg Message) string {
 		return m.Short()
 	}
 	return "Unknown message type"
+}
+
+func GetLocalIp() (string, error) {
+	netInterfaces, err := net.Interfaces()
+	var ip string
+	if err != nil {
+		// fmt.Println("net.Interfaces failed, err:", err.Error())
+		return ip, err
+	}
+
+	for i := 0; i < len(netInterfaces); i++ {
+		if (netInterfaces[i].Flags & net.FlagUp) != 0 {
+			addrs, _ := netInterfaces[i].Addrs()
+
+			for _, address := range addrs {
+				if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
+					if ipnet.IP.To4() != nil {
+						fmt.Println(ipnet.IP.String())
+						return ipnet.IP.String(), nil
+					}
+				}
+			}
+		}
+	}
+
+	return ip, errors.New("no valid interface")
 }

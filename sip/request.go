@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/emiago/sipgo/sip"
 )
 
 // Request RFC 3261 - 7.1.
@@ -246,12 +244,12 @@ Content-Length: 221
 // the following header fields: To, From, CSeq, Call-ID, Max-Forwards,
 // and Via; all of these header fields are mandatory in all SIP
 // requests.
-func NewInviteRequest(sender *sip.Uri, recipment *sip.Uri, transport string, body []byte) *Request {
+func NewInviteRequest(sender *Uri, recipment *Uri, transport string, body []byte) *Request {
 	inviteReq := NewRequest(INVITE, recipment, "SIP/2.0")
 
-	params := sip.NewParams()
-	params["branch"] = sip.GenerateBranch()
-	inviteReq.AppendHeader(&sip.ViaHeader{
+	params := NewParams()
+	params["branch"] = GenerateBranch()
+	inviteReq.AppendHeader(&ViaHeader{
 		ProtocolName:    "SIP",
 		ProtocolVersion: "2.0",
 		Transport:       transport,
@@ -260,26 +258,42 @@ func NewInviteRequest(sender *sip.Uri, recipment *sip.Uri, transport string, bod
 		Params:          params,
 	})
 
-	inviteReq.AppendHeader(&sip.FromHeader{
+	inviteReq.AppendHeader(&FromHeader{
 		DisplayName: strings.ToUpper(sender.User),
-		Address: sip.Uri{
+		Address: Uri{
 			User: sender.User,
 			Host: sender.Host,
 			Port: sender.Port,
 		},
 	})
-	inviteReq.AppendHeader(&sip.ToHeader{
+	inviteReq.AppendHeader(&ToHeader{
 		DisplayName: strings.ToUpper(recipment.User),
-		Address: sip.Uri{
+		Address: Uri{
 			User: recipment.User,
 			Host: recipment.Host,
 			Port: recipment.Port,
 		},
 	})
-	callid := sip.CallIDHeader("gotest-" + time.Now().Format(time.RFC3339Nano))
+
+	var contentType ContentTypeHeader = "application/sdp"
+	inviteReq.AppendHeader(&contentType)
+
+	contactParams := NewParams()
+	contactParams["expires"] = strconv.Itoa(3600)
+	inviteReq.AppendHeader(&ContactHeader{
+		DisplayName: strings.ToUpper(sender.User),
+		Address: Uri{
+			User: sender.User,
+			Host: sender.Host,
+			Port: sender.Port,
+		},
+		Params: contactParams,
+	})
+
+	callid := CallIDHeader("gotest-" + time.Now().Format(time.RFC3339Nano))
 	inviteReq.AppendHeader(&callid)
-	inviteReq.AppendHeader(&sip.CSeqHeader{SeqNo: 1, MethodName: INVITE})
-	inviteReq.SetBody(nil)
+	inviteReq.AppendHeader(&CSeqHeader{SeqNo: 1, MethodName: INVITE})
+	inviteReq.SetBody(body)
 	return inviteReq
 }
 
