@@ -3,32 +3,12 @@ package sip_server
 import (
 	"context"
 	"encoding/xml"
-	"fmt"
 	"strconv"
-	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/yushimeng/rock/sdp"
 	"github.com/yushimeng/rock/sip"
 	"github.com/yushimeng/rock/transport"
-)
-
-type SessionState int
-type InviteState int
-
-const (
-	SessionStateInit SessionState = iota
-	SessionStateRegister
-	SessionStateAlive
-	SessionStateDestroy
-)
-
-const (
-	InviteStateInit InviteState = iota
-	InviteStateStart
-	InviteStateTrying
-	InviteStateOk
-	InviteStateDone
 )
 
 type SipSession struct {
@@ -40,16 +20,19 @@ type SipSession struct {
 	peerPort  int
 	conn      transport.Connection
 
-	sipState        SessionState
-	invitePlayState InviteState
+	sipState        sip.SessionState
+	invitePlayState sip.InviteState
 	// server info
-	registerRequest *sip.Request
-	timerRegister   *time.Timer
-	timerKeepalive  *time.Timer
-	request_chan    chan *sip.Request
-	response_chan   chan *sip.Response
-	log             *logrus.Entry
+	registerRequest  *sip.Request
+	registerTimer    *sip.Timer
+	keepaliveTimer   *sip.Timer
+	request_chan     chan *sip.Request
+	response_chan    chan *sip.Response
+	log              *logrus.Entry
+	keepaliveTimeout int
 
+	invitePlayRequest  *sip.Request
+	invitePlayResponse *sip.Response
 	// conf
 	// pull_immediate bool
 	conf *SipServerConf
@@ -58,7 +41,8 @@ type SipSession struct {
 // for futher make sip session by response, we set params so many, and simple.
 func NewSipSession(srv *SipServer, clientId, transport, addr string) *SipSession {
 	ctx := srv.ctx
-	logger := ctx.Value("log").(*logrus.Logger).WithFields(logrus.Fields{"caller": clientId})
+	l := ctx.Value("log").(*logrus.Logger)
+	logger := l.WithFields(logrus.Fields{"caller": clientId})
 	conn, err := srv.tp.GetConnection(transport, addr)
 	if err != nil {
 		logger.Errorf("failed to get connection, transport=%s addr=%s", transport, addr)
@@ -66,16 +50,18 @@ func NewSipSession(srv *SipServer, clientId, transport, addr string) *SipSession
 	}
 
 	sess := &SipSession{
-		clientId:      clientId,
-		transport:     transport,
-		conn:          conn,
-		request_chan:  make(chan *sip.Request, 1),
-		response_chan: make(chan *sip.Response, 1),
-		log:           logger,
-		// pull_immediate: true,
-		conf: srv.conf,
+		sipState:         sip.SessionStateInit,
+		invitePlayState:  sip.InviteStateInit,
+		clientId:         clientId,
+		transport:        transport,
+		conn:             conn,
+		request_chan:     make(chan *sip.Request, 1),
+		response_chan:    make(chan *sip.Response, 1),
+		log:              logger,
+		conf:             srv.conf,
+		keepaliveTimeout: 60,
 	}
-
+	srv.sessions[clientId] = sess
 	return sess
 }
 
@@ -92,20 +78,26 @@ func (sess *SipSession) RequestChan() chan *sip.Request {
 func (sess *SipSession) Serve(ctx context.Context) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-
-	sess.timerRegister = time.NewTimer(60 * time.Second)
-	sess.timerKeepalive = time.NewTimer(3 * 60 * time.Second)
+	sess.registerTimer = sip.NewTimer(sess.keepaliveTimeout, 1)
+	sess.keepaliveTimer = sip.NewTimer(sess.keepaliveTimeout, 3)
 
 	sess.log.Info("sipSession entry loop...")
 	for {
 		select {
-		case <-sess.timerRegister.C:
-			sess.log.Warn("timerRegister timeout")
+		case <-sess.registerTimer.Timer.C:
+			sess.registerTimer.TimeoutCnt++
+			sess.sipState.OnTimeout()
+			sess.log.Error("timerRegister timeout")
 			return
-		case <-sess.timerKeepalive.C:
-			sess.log.Warn("timerKeepalive timeout")
-			return
-		// case invite<- sess.invite_chan:
+		case <-sess.keepaliveTimer.Timer.C:
+			sess.keepaliveTimer.TimeoutCnt++
+			if sess.keepaliveTimer.TimeoutCnt > sess.keepaliveTimer.MaxTimeoutCnt {
+				sess.sipState.OnTimeout()
+				sess.log.Error("timerKeepalive timeout")
+				return
+			}
+			sess.keepaliveTimer.Reset(sess.keepaliveTimeout)
+		// TODO: seperate msg here.
 		case req := <-sess.request_chan:
 			sess.processRequest(req)
 		case res := <-sess.response_chan:
@@ -114,6 +106,12 @@ func (sess *SipSession) Serve(ctx context.Context) {
 			sess.log.Println("session recv ctx done.")
 			return
 		}
+
+		if sess.conf.pull_immediate && sess.invitePlayState == sip.InviteStateInit {
+			sess.sendInvite()
+			sess.invitePlayState.OnInvite()
+		}
+
 	}
 }
 
@@ -159,45 +157,59 @@ func (sess *SipSession) refreshSessionInfo(req *sip.Request) {
 }
 
 func (sess *SipSession) processRequest(req *sip.Request) {
-
 	if req.Method == sip.REGISTER {
-		expires := req.GetHeader("expires")
-		if expires == nil {
-			sess.log.Error("recv register without cseq")
-			return
-		}
-		expiresInt, err := strconv.Atoi(expires.Value())
-		if err != nil {
-			sess.log.Error("recv register with invalied expires")
-		}
-
-		sess.timerRegister.Reset(time.Duration(expiresInt) * (time.Second))
-
-		res := sip.NewResponseFromRequest(req, 200, "OK", nil)
-		sess.conn.WriteMsg(res)
-
-		sess.registerRequest = req
-		sess.refreshSessionInfo(req)
-		//
-		sess.log.Println("pull_immediate: ", sess.conf.pull_immediate)
-
-		if sess.conf.pull_immediate {
-			sess.sendInvite()
-		}
+		sess.processRegister(req)
 		return
 	}
 
 	if req.Method == sip.MESSAGE {
 		v := RequestBody{}
-		err := xml.Unmarshal(req.Body(), &v)
-		if err != nil {
-			fmt.Printf("error: %v", err)
+		if err := xml.Unmarshal(req.Body(), &v); err != nil {
+			sess.log.Errorf("message body Unmarshal error: %v", err)
 			return
 		}
-		fmt.Println(v)
+		if v.CmdType == "Keepalive" {
+			sess.processKeepalive(req, &v)
+		} else {
+			sess.log.Warnf("recv unrecognized CmdType:%s", v.CmdType)
+		}
 	}
 
 }
+
+func (sess *SipSession) processRegister(req *sip.Request) {
+	expires := req.GetHeader("expires")
+	if expires == nil {
+		sess.log.Error("recv register without cseq")
+		return
+	}
+	expiresInt, err := strconv.Atoi(expires.Value())
+	if err != nil {
+		sess.log.Error("recv register with invalied expires")
+	}
+	sess.registerTimer.Reset(expiresInt)
+
+	res := sip.NewResponseFromRequest(req, 200, "OK", nil)
+	sess.conn.WriteMsg(res)
+
+	sess.registerRequest = req
+	sess.refreshSessionInfo(req)
+	if expiresInt == 0 {
+		sess.sipState.OnUnregister()
+	} else {
+		sess.sipState.OnUnregister()
+	}
+
+}
+
+func (sess *SipSession) processKeepalive(req *sip.Request, body *RequestBody) {
+	res := sip.NewResponseFromRequest(req, 200, "OK", nil)
+	sess.conn.WriteMsg(res)
+
+	sess.sipState.OnKeepalive()
+	sess.keepaliveTimer.Reset(sess.keepaliveTimeout)
+}
+
 func (sess *SipSession) sendInvite() {
 	sender := &sip.Uri{
 		User: sess.conf.serverId,
@@ -223,6 +235,7 @@ func (sess *SipSession) sendInvite() {
 	}
 
 	req := sip.NewInviteRequest(sender, recipment, sess.registerRequest.Transport(), s.Builder())
+	sess.invitePlayRequest = req
 
 	sess.log.Debug("send invite", req)
 
@@ -230,6 +243,14 @@ func (sess *SipSession) sendInvite() {
 	req.SetTransport(sess.transport)
 	sess.conn.WriteMsg(req)
 }
-func (sess *SipSession) processResponse(req *sip.Response) {
 
+func (sess *SipSession) processResponse(res *sip.Response) {
+	if res.IsProvisional() {
+		return
+	}
+	if res.IsInviteOk() {
+		sess.invitePlayResponse = res
+		ack := sip.NewAckRequest(sess.invitePlayRequest, sess.invitePlayResponse, nil)
+		sess.conn.WriteMsg(ack)
+	}
 }

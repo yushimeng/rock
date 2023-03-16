@@ -33,6 +33,7 @@ const (
 	PUBLISH   RequestMethod = "PUBLISH"
 )
 
+// const
 type Message interface {
 	// Start line returns message start line.
 	StartLine() string

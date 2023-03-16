@@ -39,4 +39,42 @@ a=rtpmap:98 MPEG4/90000
 y=5547763919
 f=v/3/6/25/1/20a/1/8/1
 
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 192.168.1.64:5060;rport=5060;received=192.168.1.64;branch=z9hG4bK731488522
+From: <sip:34020000002000000001@3402000000>;tag=174592740
+To: <sip:34020000001320000001@3402000000>;tag=168289829
+CSeq: 2 INVITE
+Call-ID: gotest-2023-03-16T18:50:42.637719+08:00
+User-Agent: LiveQing
+Content-Length: 0
 
+
+MESSAGE sip:34020000002000000001@3402000000 SIP/2.0
+Via: SIP/2.0/UDP 192.168.1.64:5060;rport=5060;received=192.168.1.64;branch=z9hG4bK731488522
+From: <sip:34020000001320000001@3402000000>;tag=174592740
+To: <sip:34020000002000000001@3402000000>
+Call-ID: 887872640
+CSeq: 20 MESSAGE
+Content-Type: Application/MANSCDP+xml
+Max-Forwards: 70
+User-Agent: IP Camera
+Content-Length: 178
+
+<?xml version="1.0" encoding="UTF-8"?>
+<Notify>
+<CmdType>Keepalive</CmdType>
+<SN>1563</SN>
+<DeviceID>34020000001320000001</DeviceID>
+<Status>OK</Status>
+<Info>
+</Info>
+</Notify>
+
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 192.168.2.64:5060;rport=5060;received=192.168.2.64;branch=z9hG4bK731488522
+From: <sip:34020000001320000264@3402000000>;tag=174592740
+To: <sip:34020000002000000001@3402000000>;tag=168289829
+CSeq: 20 MESSAGE
+Call-ID: 887872640
+User-Agent: LiveQing
+Content-Length: 0

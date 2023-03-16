@@ -152,6 +152,19 @@ func (res *Response) IsRegister() bool {
 	return false
 }
 
+func (res *Response) IsInviteTrying() bool {
+	if cseq, ok := res.CSeq(); ok {
+		return cseq.MethodName == INVITE && res.IsProvisional()
+	}
+	return false
+}
+
+func (res *Response) IsInviteOk() bool {
+	if cseq, ok := res.CSeq(); ok {
+		return cseq.MethodName == INVITE && res.IsSuccess()
+	}
+	return false
+}
 func (res *Response) IsCancel() bool {
 	if cseq, ok := res.CSeq(); ok {
 		return cseq.MethodName == CANCEL
