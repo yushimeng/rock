@@ -6,9 +6,11 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/pion/dtls/v2/examples/util"
 	"github.com/sirupsen/logrus"
 	"github.com/yushimeng/rock/api"
 	"github.com/yushimeng/rock/sip_server"
+	"github.com/yushimeng/rock/util"
 )
 
 // Create a new instance of the logger. You can have any number of instances.
@@ -47,14 +49,12 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
-	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), string("log"), log))
+	ctx, cancel := context.WithCancel(context.WithValue(context.Background(), util.IdentifyLog, log))
 	defer cancel()
-
-	api := api.NewApiServer()
+	sip := sip_server.NewSipServer(ctx)
+	api := api.NewApiServer(ctx, sip)
 
 	api.Serve()
-
-	sip := sip_server.NewSipServer(ctx)
 	go sip.ListenAndServe(ctx, "udp", "127.0.0.1:5060")
 
 	select {

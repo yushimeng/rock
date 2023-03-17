@@ -7,6 +7,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"github.com/yushimeng/rock/sip"
+	"github.com/yushimeng/rock/util"
 )
 
 type SipServerConf struct {
@@ -40,6 +41,34 @@ type SipServer struct {
 // 		srv.log.Info("respond '405 Method Not Allowed' failed")
 // 	}
 // }
+type CmdType int
+
+const (
+	CmdInvite int = iota + 1
+	CmdBye
+	CmdPtz
+	CmdRecord
+)
+
+type APICMD struct {
+	cmd       CmdType
+	deviceId  string
+	channelId string
+}
+
+func (srv *SipServer) OnRecvHttpInvite(device, channel string) error {
+	sess, err := srv.fetchSessionByDeviceId(device)
+	if err != nil {
+		return fmt.Errorf("fetch sess by id %v", err)
+	}
+	sess.sendInvite()
+	return nil
+}
+
+func (srv *SipServer) OnDeviceDestroyed(device string) {
+	// TODO: session should be locked.
+	delete(srv.sessions, device)
+}
 
 // WriteResponse will proxy message to transport layer. Use it in stateless mode
 func (srv *SipServer) WriteResponse(r *sip.Response) error {
@@ -69,7 +98,7 @@ func NewSipServer(ctx context.Context) *SipServer {
 		ctx:       ctx,
 		conf:      cfg,
 		sessions:  make(map[string]*SipSession),
-		log:       ctx.Value("log").(*logrus.Logger).WithFields(logrus.Fields{"caller": "SipServer"}),
+		log:       ctx.Value(util.IdentifyLog).(*logrus.Logger).WithFields(logrus.Fields{string(util.IdentifyCaller): "SipServer"}),
 	}
 
 	srv.tp.OnMessage(srv.handleMessage)
@@ -114,12 +143,15 @@ func (srv *SipServer) handleResponse(res *sip.Response) (err error) {
 	return
 }
 
+func (srv *SipServer) fetchSessionByDeviceId(id string) (*SipSession, error) {
+	if sess, ok := srv.sessions[id]; ok {
+		return sess, nil
+	}
+	// TODO: 产生的error自带标识?
+	return nil, fmt.Errorf("fetch session by id[%s] failed", id)
+}
+
 func (srv *SipServer) fetchOrCreateSession(req *sip.Request) (*SipSession, error) {
-	/*
-		From: "Bob" <sips:bob@biloxi.com> ;tag=a48s
-		From: sip:+12125551212@phone2net.com;tag=887s
-		From: Anonymous <sip:c8oqz84zk7z@privacy.org>;tag=hyh8
-	*/
 	from, bret := req.From()
 	if !bret {
 		return nil, errors.New("request frome is nil")

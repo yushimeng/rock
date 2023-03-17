@@ -1,0 +1,55 @@
+
+MESSAGE sip:34020000001320000001@1306020049 SIP/2.0
+Via: SIP/2.0/UDP 119.249.51.171:5060;rport;branch=z9h64bK80981067
+From: <sip:13060200492000005858@119.249.51.171:5060>;tag=EvsGbF95528213
+To: <sip:34020000001320000001@1306020049>
+Call-ID: 202058201684
+CSeq: 110 MESSAGE
+Content-Type: Application/MANSCDP+xml
+Max-Forwards: 70
+User-Agent: baidu/evs
+Content-Length: 154
+
+<?xml version="1.0" encoding="GB2312"?>
+<Query>
+<CmdType>PresetQuery</CmdType>
+<SN>72677460</SN>
+<DeviceID>34020000001310000001</DeviceID>
+</Query>
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 119.249.51.171:5060;rport;branch=z9h64bK80981067
+From: <sip:13060200492000005858@119.249.51.171:5060>;tag=EvsGbF95528213
+To: <sip:34020000001320000001@1306020049>
+Call-ID: 202058201684
+CSeq: 110 MESSAGE
+User-Agent: Happytime GB28181 V6.0
+Content-Length: 0
+
+MESSAGE sip:13060200492000005858@1306020049 SIP/2.0
+Via: SIP/2.0/UDP 172.18.0.1:5060;branch=z9hG4bK64142188
+From: <sip:34020000001320000001@1306020049>;tag=6ee53a86
+To: <sip:13060200492000005858@1306020049>
+Call-ID: 6304289974297E4E@172.18.0.1
+CSeq: 2 MESSAGE
+Max-Forwards: 70
+User-Agent: Happytime GB28181 V6.0
+Content-Type: Application/MANSCDP+xml
+Content-Length: 181
+
+<?xml version="1.0"?>
+<Response>
+<CmdType>PresetQuery</CmdType>
+<SN>72677460</SN>
+<DeviceID>34020000001320000001</DeviceID>
+<PresetList Num="0">
+</PresetList>
+</Response>
+
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.18.0.1:5060;rport=1569;received=172.16.11.36;branch=z9hG4bK64142188
+From: <sip:34020000001320000001@1306020049>;tag=6ee53a86
+To: <sip:13060200492000005858@1306020049>
+CSeq: 2 MESSAGE
+Call-ID: 6304289974297E4E@172.18.0.1
+User-Agent: baidu/evs
+Content-Length: 0

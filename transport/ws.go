@@ -11,6 +11,7 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/yushimeng/rock/sip"
+	"github.com/yushimeng/rock/util"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -35,7 +36,7 @@ func NewWSTransport(addr string, par sip.SIPParser) *WSTransport {
 		parser: par,
 		pool:   NewConnectionPool(),
 	}
-	p.log = log.Logger.With().Str("caller", "transport<WS>").Logger()
+	p.log = log.Logger.With().Str(string(util.IdentifyCaller), "transport<WS>").Logger()
 	return p
 }
 
@@ -267,7 +268,7 @@ func (c *WSConnection) Read(b []byte) (n int, err error) {
 		}
 
 		if SIPDebug {
-			log.Debug().Str("caller", c.LocalAddr().String()).Msgf("WS read connection header <- %s len=%d", c.Conn.RemoteAddr(), header.Length)
+			log.Debug().Str(string(util.IdentifyCaller), c.LocalAddr().String()).Msgf("WS read connection header <- %s len=%d", c.Conn.RemoteAddr(), header.Length)
 		}
 
 		data := make([]byte, header.Length)

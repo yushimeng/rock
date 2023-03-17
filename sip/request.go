@@ -297,6 +297,59 @@ func NewInviteRequest(sender *Uri, recipment *Uri, transport string, body []byte
 	return inviteReq
 }
 
+func NewCatalogRequest(sender *Uri, recipment *Uri, transport string, body []byte) *Request {
+	inviteReq := NewRequest(INVITE, recipment, "SIP/2.0")
+
+	params := NewParams()
+	params["branch"] = GenerateBranch()
+	inviteReq.AppendHeader(&ViaHeader{
+		ProtocolName:    "SIP",
+		ProtocolVersion: "2.0",
+		Transport:       transport,
+		Host:            sender.Host, // should be server ip.
+		Port:            sender.Port,
+		Params:          params,
+	})
+
+	inviteReq.AppendHeader(&FromHeader{
+		DisplayName: strings.ToUpper(sender.User),
+		Address: Uri{
+			User: sender.User,
+			Host: sender.Host,
+			Port: sender.Port,
+		},
+	})
+	inviteReq.AppendHeader(&ToHeader{
+		DisplayName: strings.ToUpper(recipment.User),
+		Address: Uri{
+			User: recipment.User,
+			Host: recipment.Host,
+			Port: recipment.Port,
+		},
+	})
+
+	var contentType ContentTypeHeader = "application/sdp"
+	inviteReq.AppendHeader(&contentType)
+
+	contactParams := NewParams()
+	contactParams["expires"] = strconv.Itoa(3600)
+	inviteReq.AppendHeader(&ContactHeader{
+		DisplayName: strings.ToUpper(sender.User),
+		Address: Uri{
+			User: sender.User,
+			Host: sender.Host,
+			Port: sender.Port,
+		},
+		Params: contactParams,
+	})
+
+	callid := CallIDHeader("gotest-" + time.Now().Format(time.RFC3339Nano))
+	inviteReq.AppendHeader(&callid)
+	inviteReq.AppendHeader(&CSeqHeader{SeqNo: 1, MethodName: INVITE})
+	inviteReq.SetBody(body)
+	return inviteReq
+}
+
 // NewAckRequest creates ACK request for 2xx INVITE
 // https://tools.ietf.org/html/rfc3261#section-13.2.2.4
 func NewAckRequest(inviteRequest *Request, inviteResponse *Response, body []byte) *Request {

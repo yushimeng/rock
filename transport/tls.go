@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/yushimeng/rock/sip"
+	"github.com/yushimeng/rock/util"
 
 	"github.com/rs/zerolog/log"
 )
@@ -29,7 +30,7 @@ func NewTLSTransport(addr string, par sip.SIPParser, tlsConf *tls.Config) *TLSTr
 
 	// p.rootPool = roots
 	p.tlsConf = tlsConf
-	p.log = log.Logger.With().Str("caller", "transport<TLS>").Logger()
+	p.log = log.Logger.With().Str(string(util.IdentifyCaller), "transport<TLS>").Logger()
 	return p
 }
 

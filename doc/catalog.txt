@@ -1,0 +1,70 @@
+MESSAGE sip:34020000001320000001@1306020049 SIP/2.0
+Via: SIP/2.0/UDP 119.249.51.171:5060;rport;branch=z9h64bK58203712
+From: <sip:13060200492000005858@119.249.51.171:5060>;tag=EvsGbF71158044
+To: <sip:34020000001320000001@1306020049>
+Call-ID: 202041651000
+CSeq: 112 MESSAGE
+Content-Type: Application/MANSCDP+xml
+Max-Forwards: 70
+User-Agent: baidu/evs
+Content-Length: 150
+
+<?xml version="1.0" encoding="GB2312"?>
+<Query>
+<CmdType>Catalog</CmdType>
+<SN>67295662</SN>
+<DeviceID>34020000001320000001</DeviceID>
+</Query>
+
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 119.249.51.171:5060;rport;branch=z9h64bK58203712
+From: <sip:13060200492000005858@119.249.51.171:5060>;tag=EvsGbF71158044
+To: <sip:34020000001320000001@1306020049>
+Call-ID: 202041651000
+CSeq: 112 MESSAGE
+User-Agent: Happytime GB28181 V6.0
+Content-Length: 0
+
+MESSAGE sip:13060200492000005858@1306020049 SIP/2.0
+Via: SIP/2.0/UDP 172.18.0.1:5060;branch=z9hG4bK64142192
+From: <sip:34020000001320000001@1306020049>;tag=08548423
+To: <sip:13060200492000005858@1306020049>
+Call-ID: 42588B053DE99D62@172.18.0.1
+CSeq: 4 MESSAGE
+Max-Forwards: 70
+User-Agent: Happytime GB28181 V6.0
+Content-Type: Application/MANSCDP+xml
+Content-Length: 568
+
+<?xml version="1.0"?>
+<Response>
+<CmdType>Catalog</CmdType>
+<SN>67295662</SN>
+<DeviceID>34020000001320000001</DeviceID>
+<SumNum>1</SumNum>
+<DeviceList Num="1">
+<Item>
+<DeviceID>34020000001310000001</DeviceID>
+<Name>channel1</Name>
+<Manufacturer>Happytimesoft</Manufacturer>
+<Model>IPC</Model>
+<Owner>Owner</Owner>
+<CivilCode>CivilCode</CivilCode>
+<Address>Address</Address>
+<Parental>0</Parental>
+<ParentID>34020000001320000001</ParentID>
+<RegisterWay>1</RegisterWay>
+<Secrecy>0</Secrecy>
+<Status>ON</Status>
+</Item>
+</DeviceList>
+</Response>
+
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.18.0.1:5060;rport=1569;received=172.16.11.36;branch=z9hG4bK64142192
+From: <sip:34020000001320000001@1306020049>;tag=08548423
+To: <sip:13060200492000005858@1306020049>
+CSeq: 4 MESSAGE
+Call-ID: 42588B053DE99D62@172.18.0.1
+User-Agent: baidu/evs
+Content-Length: 0

@@ -7,6 +7,7 @@ import (
 	"net"
 
 	"github.com/yushimeng/rock/sip"
+	"github.com/yushimeng/rock/util"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -41,7 +42,7 @@ func NewUDPTransport(addr string, par sip.SIPParser) *UDPTransport {
 		addr:   addr,
 		parser: par,
 	}
-	p.log = log.Logger.With().Str("caller", "transport<UDP>").Logger()
+	p.log = log.Logger.With().Str(string(util.IdentifyCaller), "transport<UDP>").Logger()
 	return p
 }
 

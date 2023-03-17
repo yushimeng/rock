@@ -10,6 +10,7 @@ import (
 
 	// "github.com/emiago/sipgo/parser"
 	"github.com/yushimeng/rock/sip"
+	"github.com/yushimeng/rock/util"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -36,7 +37,7 @@ func NewTCPTransport(addr string, par sip.SIPParser) *TCPTransport {
 		pool:      NewConnectionPool(),
 		transport: TransportTCP,
 	}
-	p.log = log.Logger.With().Str("caller", "transport<TCP>").Logger()
+	p.log = log.Logger.With().Str(string(util.IdentifyCaller), "transport<TCP>").Logger()
 	return p
 }
 

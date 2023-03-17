@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/yushimeng/rock/sip"
+	"github.com/yushimeng/rock/util"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -53,7 +54,7 @@ func NewLayer(
 		ConnectionReuse: true,
 	}
 
-	l.log = log.Logger.With().Str("caller", "transportlayer").Logger()
+	l.log = log.Logger.With().Str(string(util.IdentifyCaller), "transportlayer").Logger()
 	// l.OnMessage(func(msg sip.Message) { l.log.Info().Msg("no handler for message") })
 	return l
 }

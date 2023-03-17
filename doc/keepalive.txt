@@ -1,0 +1,27 @@
+MESSAGE sip:13060200492000005858@1306020049 SIP/2.0
+Via: SIP/2.0/UDP 172.18.0.1:5060
+From: <sip:34020000001320000001@1306020049>;tag=135fc794
+To: <sip:13060200492000005858@1306020049>
+Call-ID: 765322297AAA4DEA@172.18.0.1
+CSeq: 3 MESSAGE
+Max-Forwards: 70
+User-Agent: Happytime GB28181 V6.0
+Content-Type: Application/MANSCDP+xml
+Content-Length: 152
+
+<?xml version="1.0"?>
+<Notify>
+<CmdType>Keepalive</CmdType>
+<SN>2</SN>
+<DeviceID>34020000001320000001</DeviceID>
+<Status>OK</Status>
+</Notify>
+
+SIP/2.0 200 OK
+Via: SIP/2.0/UDP 172.18.0.1:5060;rport=1569;received=172.16.11.36
+From: <sip:34020000001320000001@1306020049>;tag=135fc794
+To: <sip:13060200492000005858@1306020049>
+CSeq: 3 MESSAGE
+Call-ID: 765322297AAA4DEA@172.18.0.1
+User-Agent: baidu/evs
+Content-Length: 0

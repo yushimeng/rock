@@ -25,3 +25,9 @@ func (t *Timer) Reset(nSecond int) {
 	t.TimeoutCnt = 0
 	t.Duration = nSecond
 }
+
+func (t *Timer) Stop() {
+	if t.Timer != nil {
+		t.Timer.Stop()
+	}
+}
